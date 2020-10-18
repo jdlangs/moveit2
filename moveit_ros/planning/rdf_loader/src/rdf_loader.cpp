@@ -57,7 +57,8 @@ namespace rdf_loader
 {
 static const rclcpp::Logger LOGGER = rclcpp::get_logger("moveit_rdf_loader.rdf_loader");
 
-RDFLoader::RDFLoader(const std::shared_ptr<rclcpp::Node>& node, const std::string& robot_description)
+RDFLoader::RDFLoader(const std::shared_ptr<rclcpp::Node>& node, const std::string& robot_description) :
+  robot_description_(robot_description)
 {
   moveit::tools::Profiler::ScopedStart prof_start;
   moveit::tools::Profiler::ScopedBlock prof_block("RDFLoader(robot_description)");
@@ -65,26 +66,26 @@ RDFLoader::RDFLoader(const std::shared_ptr<rclcpp::Node>& node, const std::strin
   auto start = node->now();
 
   // Check if the robot_description parameter is declared, declare it if it's not declared yet
-  if (!node->has_parameter(robot_description))
-    node->declare_parameter(robot_description);
+  if (!node->has_parameter(robot_description_))
+    node->declare_parameter(robot_description_);
   std::string robot_description_content;
-  node->get_parameter_or(robot_description, robot_description_content, std::string());
+  node->get_parameter_or(robot_description_, robot_description_content, std::string());
 
   if (robot_description_content.empty())
   {
-    RCLCPP_INFO_ONCE(LOGGER, "Robot model parameter not found! Did you remap '%s'?\n", robot_description.c_str());
+    RCLCPP_INFO_ONCE(LOGGER, "Robot model parameter not found! Did you remap '%s'?\n", robot_description_.c_str());
     return;
   }
 
   std::unique_ptr<urdf::Model> urdf(new urdf::Model());
   if (!urdf->initString(robot_description_content))
   {
-    RCLCPP_INFO(LOGGER, "Unable to parse URDF from parameter: '%s'", robot_description.c_str());
+    RCLCPP_INFO(LOGGER, "Unable to parse URDF from parameter: '%s'", robot_description_.c_str());
     return;
   }
   urdf_ = std::move(urdf);
 
-  const std::string srdf_description = robot_description + "_semantic";
+  const std::string srdf_description = robot_description_ + "_semantic";
   // Check if the robot_description_semantic parameter is declared, declare it if it's not declared yet
   if (!node->has_parameter(srdf_description))
     node->declare_parameter(srdf_description);
